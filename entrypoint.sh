@@ -18,15 +18,15 @@ if [ "${ECS_CLUSTER}" == "" ]; then
   exit 1
 fi
 
-ECS_REGION=$(echo ${ECS_CLUSTER} | cut -f 4 -d ':')
-if [ "${ECS_REGION}" == "" ]; then
-  echo "[ERROR] Unable to fetch the name of the cluster region. Maybe a bug?: " 1>&2
-  exit 1
-fi
-
 CONTAINER_INSTANCE=$(curl -s ${AGENT_URL} | jq .ContainerInstanceArn | tr -d \")
 if [ "${CONTAINER_INSTANCE}" == "" ]; then
   echo "[ERROR] Unable to fetch the arn of the container instance. Maybe a bug?: " 1>&2
+  exit 1
+fi
+
+ECS_REGION=$(echo ${CONTAINER_INSTANCE} | cut -f 4 -d ':')
+if [ "${ECS_REGION}" == "" ]; then
+  echo "[ERROR] Unable to fetch the name of the cluster region. Maybe a bug?: " 1>&2
   exit 1
 fi
 
