@@ -1,5 +1,7 @@
 #!/bin/sh
 
+which cut
+
 # Set VERBOSE=1 to get more output
 VERBOSE=${VERBOSE:-0}
 function verbose () {
@@ -13,6 +15,12 @@ AGENT_URL=${AGENT_URL:-http://localhost:51678/v1/metadata}
 ECS_CLUSTER=$(curl -s ${AGENT_URL} | jq .Cluster | tr -d \")
 if [ "${ECS_CLUSTER}" == "" ]; then
   echo "[ERROR] Unable to fetch the name of the cluster. Maybe a bug?: " 1>&2
+  exit 1
+fi
+
+ECS_REGION=$(echo ${ECS_CLUSTER} | cut -f 4 -d ':')
+if [ "${ECS_REGION}" == "" ]; then
+  echo "[ERROR] Unable to fetch the name of the cluster region. Maybe a bug?: " 1>&2
   exit 1
 fi
 
@@ -68,8 +76,8 @@ if [ "${SLACK_URL}" != "" ]; then
 fi
 
 # Drain the container instance.
-aws ecs update-container-instances-state --cluster $ECS_CLUSTER \
-      --container-instances $CONTAINER_INSTANCE --status DRAINING
+aws ecs update-container-instances-state --region $ECS_REGION \
+      --cluster $ECS_CLUSTER --container-instances $CONTAINER_INSTANCE --status DRAINING
 
 # Sleep for 200 seconds to prevent this script from looping.
 # The instance should be terminated by the end of the sleep.
