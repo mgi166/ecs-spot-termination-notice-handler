@@ -75,6 +75,18 @@ if [ "${SLACK_URL}" != "" ]; then
   curl -X POST --data "payload={\"text\": \":warning: ${MESSAGE}\"}" ${SLACK_URL}
 fi
 
+DETACH_ASG=${DETACH_ASG:-false}
+
+# Detach the container instance from AutoScaling Group.
+if [ ${DETACH_ASG} != "false" ]; then
+  ASG_NAME=$(aws autoscaling describe-auto-scaling-instances --instance-ids ${INSTANCE_ID} --output text --query 'AutoScalingInstances[0].AutoScalingGroupName')
+
+  if [ ${ASG_NAME} != "" ]; then
+    echo "detaching instance from AutoScaling Group: ${ASG_NAME}"
+    aws autoscaling detach-instances --instance-ids ${INSTANCE_ID} --auto-scaling-group-name ${ASG_NAME} --no-should-decrement-desired-capacity
+  fi
+fi
+
 # Drain the container instance.
 aws ecs update-container-instances-state --region $ECS_REGION \
       --cluster $ECS_CLUSTER --container-instances $CONTAINER_INSTANCE --status DRAINING
